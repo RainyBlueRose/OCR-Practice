@@ -26,6 +26,51 @@ async function initializeOcr() {
   }
 }
 
+export const processUploadedImage = onObjectFinalized(
+  { memory: "512MiB", timeoutSeconds: 120 },
+  async (event) => {
+    const file = event.data;
+
+    console.log(file.name);
+    console.log(file.contentType);
+
+    if (!file.contentType?.startsWith("image/")) {
+      console.log(file.contentType);
+      console.log("Not an image, Skip");
+      return;
+    }
+
+    if (!file.name.startsWith("certificates/")) {
+      console.log(file.name.startsWith);
+      console.log("Not a certificate, Skip");
+      return;
+    }
+
+    await initializeOcr();
+
+    const storageFile = bucket.file(file.name);
+
+    console.log("Downloading File");
+
+    const [buffer] = await storageFile.download();
+
+    console.log(`Download ${buffer.length} bytes`);
+
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    );
+
+    console.log("Running OCR");
+
+    const result = await ocrService.recognize(arrayBuffer);
+
+    console.log("OCR Result");
+
+    console.log(result.text);
+  },
+);
+
 // export const testFunction = onSchedule(
 //   { memory: "512MiB", timeoutSeconds: 300 },
 //   async (event) => {
@@ -93,14 +138,3 @@ async function initializeOcr() {
 //     }
 //   },
 // );
-
-export const processUploadedImage = onObjectFinalized(
-  { memory: "512MiB", timeoutSeconds: 120 },
-  async (event) => {
-    const file = event.data;
-
-    console.log(file.name);
-    console.log(file.contentType);
-    console.log(file.bucket);
-  },
-);
