@@ -27,7 +27,7 @@ async function initializeOcr() {
 }
 
 export const processUploadedImage = onObjectFinalized(
-  { memory: "512MiB", timeoutSeconds: 120 },
+  { memory: "1GiB", timeoutSeconds: 120 },
   async (event) => {
     const file = event.data;
 
@@ -72,7 +72,7 @@ export const processUploadedImage = onObjectFinalized(
 );
 
 // export const testFunction = onSchedule(
-//   { memory: "512MiB", timeoutSeconds: 300 },
+//   { schedule: "*/10 * * * *", memory: "512MiB", timeoutSeconds: 300 },
 //   async (event) => {
 //     console.log("Checking for pending OCR jobs...");
 
