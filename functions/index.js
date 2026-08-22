@@ -71,6 +71,13 @@ export const testFunction = onSchedule(
 
       console.log("OCR result:");
       console.log(result.text);
+
+      await doc.ref.update({
+        status: "completed",
+        ocrText: result.text,
+      });
+
+      console.log(`completed ${data.fileName}`)
     }
   },
 );

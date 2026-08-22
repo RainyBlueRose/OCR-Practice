@@ -33,7 +33,7 @@ function App() {
       storagePath: storagePath,
       imageUrl: downloadURL,
       status: "pending",
-      orcText: null,
+      ocrText: null,
     });
   };
 
