@@ -26,7 +26,7 @@ async function initializeOcr() {
 }
 
 export const testFunction = onSchedule(
-  { schedule: "*/10 * * * *", memory: "1GiB", timeoutSeconds: 300 },
+  { memory: "512MiB", timeoutSeconds: 300 },
   async (event) => {
     console.log("Checking for pending OCR jobs...");
 
@@ -77,7 +77,7 @@ export const testFunction = onSchedule(
         ocrText: result.text,
       });
 
-      console.log(`completed ${data.fileName}`)
+      console.log(`completed ${data.fileName}`);
     }
   },
 );
