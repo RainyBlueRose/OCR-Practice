@@ -1,5 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { initializeApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { PaddleOcrService } from "ppu-paddle-ocr";
@@ -52,32 +52,45 @@ export const testFunction = onSchedule(
 
       await doc.ref.update({
         status: "processing",
+        startedAt: FieldValue.serverTimestamp(),
       });
 
-      const file = bucket.file(data.storagePath);
+      try {
+        const file = bucket.file(data.storagePath);
 
-      const [buffer] = await file.download();
+        const [buffer] = await file.download();
 
-      console.log(`Download ${buffer.length} bytes`);
+        console.log(`Download ${buffer.length} bytes`);
 
-      const arrayBuffer = buffer.buffer.slice(
-        buffer.byteOffset,
-        buffer.byteOffset + buffer.byteLength,
-      );
+        const arrayBuffer = buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength,
+        );
 
-      console.log(`Running OCR on ${data.fileName}`);
+        console.log(`Running OCR on ${data.fileName}`);
 
-      const result = await ocrService.recognize(arrayBuffer);
+        const result = await ocrService.recognize(arrayBuffer);
 
-      console.log("OCR result:");
-      console.log(result.text);
+        console.log("OCR result:");
+        console.log(result.text);
 
-      await doc.ref.update({
-        status: "completed",
-        ocrText: result.text,
-      });
+        await doc.ref.update({
+          status: "completed",
+          ocrText: result.text,
+        });
 
-      console.log(`completed ${data.fileName}`);
+        console.log(`completed ${data.fileName}`);
+
+      } catch (error) {
+
+        console.error("OCR failed", error);
+
+        await doc.ref.update({
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+          failedAt: FieldValue.serverTimestamp(),
+        });
+      }
     }
   },
 );
