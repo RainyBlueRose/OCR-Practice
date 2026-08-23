@@ -30,9 +30,7 @@ export const processUploadedImage = onObjectFinalized(
   { memory: "1GiB", timeoutSeconds: 120 },
   async (event) => {
     const file = event.data;
-
-    console.log(file.name);
-    console.log(file.contentType);
+    const filePath = file.name;
 
     if (!file.contentType?.startsWith("image/")) {
       console.log(file.contentType);
@@ -46,28 +44,50 @@ export const processUploadedImage = onObjectFinalized(
       return;
     }
 
-    await initializeOcr();
+    const fileName = filePath.split("/").pop();
 
-    const storageFile = bucket.file(file.name);
+    const jobId = fileName.split(".")[0];
 
-    console.log("Downloading File");
+    const jobRef = db.collection("certificates").doc(jobId);
 
-    const [buffer] = await storageFile.download();
+    await jobRef.update({
+      status: "processing",
+    });
 
-    console.log(`Download ${buffer.length} bytes`);
+    try {
+      await initializeOcr();
 
-    const arrayBuffer = buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
-    );
+      const storageFile = bucket.file(file.name);
 
-    console.log("Running OCR");
+      console.log("Downloading File");
 
-    const result = await ocrService.recognize(arrayBuffer);
+      const [buffer] = await storageFile.download();
 
-    console.log("OCR Result");
+      console.log(`Download ${buffer.length} bytes`);
 
-    console.log(result.text);
+      const arrayBuffer = buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.byteLength,
+      );
+
+      console.log("Running OCR");
+
+      const result = await ocrService.recognize(arrayBuffer);
+
+      console.log("OCR Result");
+
+      console.log(result.text);
+
+      await jobRef.update({
+        status: "completed",
+        ocrText: result.text,
+      });
+    } catch (error) {
+      await jobRef.update({
+        status: "failed",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   },
 );
 
